@@ -112,14 +112,14 @@ public class Receiver
 			if (expecNum == getSeqNum(data))
 			{
 				out.print(++expecNum + "|");
-				System.out.println(expecNum + "|");
+				// System.out.println(expecNum + "|");
 				out.flush();
 				write2Log(writerLog, Arrays.copyOfRange(data, 0, 20), expecNum);
 			} else 
 			{
 				//out.print((char) expecNum);
 				out.print(expecNum + "|");
-				System.out.println(expecNum + "|");
+				// System.out.println(expecNum + "|");
 				out.flush();
 				write2Log(writerLog, Arrays.copyOfRange(data, 0, 20), expecNum);
 				continue;

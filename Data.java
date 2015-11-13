@@ -47,6 +47,41 @@ public class Data {
 		return outputStream.toByteArray();
 	}
 	
+	public static char checkPakSum(byte[] byteArr) throws IOException
+	{
+		byte a = byteArr[16];
+		byte b = byteArr[17];
+		byteArr[16] = byteArr[17] = 0;
+		char c = checkSum(byteArr);
+		byteArr[16] = a;
+		byteArr[16] = b;
+		return c;
+	}
+	
+	public char checkSum() throws IOException
+	{
+		return checkSum(this.toByteArray());
+	}
+	
+	private static char checkSum(byte[] byteArr) throws IOException 
+	{
+		char[] charArr = byteArr.toString().toCharArray();
+		
+		char chek = 0;
+		for (int i = 0; i < charArr.length; i++)
+		{
+			chek ^= charArr[i];
+		}
+		
+		return chek;
+	}
+	
+	// construct byte array
+	// construct empty char array = one char for every two bytes
+	// iterate through every other byte. add two bytes into an int
+	// if int value is greater than max value of char, cast to char and add 1
+	// add char to arr
+	
 	// setters
 	public void setSrcPort(char srcPort) {this.srcPort = srcPort;}
 	

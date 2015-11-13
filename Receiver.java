@@ -10,11 +10,49 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Date;
 import java.net.InetAddress;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class Receiver 
 {	
 	
 	static int winSizeBytes = 576;
+	
+	public static int hash(byte[] data) throws NoSuchAlgorithmException, IOException
+	{
+		
+				
+		return (int) Data.checkPakSum(data);
+		
+		
+	}
+	
+	public static int truLen(byte[] data)
+	{
+		String string = new String(data);
+		char[] charArr = string.toCharArray();
+		
+		int i = 20;
+		for (; i < charArr.length-1; i++)
+		{
+			if (charArr[i] == 0 &&
+					charArr[i+1] == 0)
+				return i;
+		}
+		
+		return i;
+	}
+	
+	public static int checkPacketSum(byte[] data) throws IOException
+	{
+		int a = data[16]<<8;
+		int b = data[17];
+		int c = a+b;
+		
+		//return Data.checkPakSum(data) == getINetSum(data);
+		
+		return c;
+	}
 	
 	/**
 	 * simple method to get sequence number from received packet
@@ -53,18 +91,25 @@ public class Receiver
 		return (int) bb.get();
 	}
 	
+	public static char getINetSum(byte[] data)
+	{
+		ByteBuffer bb = ByteBuffer.wrap(Arrays.copyOfRange(data, 16, 18));
+		return bb.getChar();
+	}
+	
 	public static void write2Log(FileWriter writerLog, byte[] data, int ackNum) throws IOException 
 	{
 		writerLog.write((new Date()).toString() + " ");
 		writerLog.write(getSrcPort(data) + " ");
 		writerLog.write(getDstPort(data) + " ");
 		writerLog.write(getSeqNum(data) + " ");
+		writerLog.write(getINetSum(data) + " ");
 		writerLog.write(ackNum + " ");
 		writerLog.write(getFlags(data) + "\n");
 		writerLog.flush();
 	}
 	
-	public static void main(String[] args) throws NumberFormatException, IOException 
+	public static void main(String[] args) throws NumberFormatException, IOException, NoSuchAlgorithmException 
 	{
 		// check that command line arguments are of proper format
 		if (args.length < 5) 
@@ -94,6 +139,10 @@ public class Receiver
 		// file writer to write logs to logfile
 		FileWriter writerLog = new FileWriter(
 				new File(args[4]));
+		
+		// file writer to file1 for testing
+		FileWriter writerFile1 = new FileWriter(
+				new File("/Users/brandonbakhshai/Desktop/file1.txt"));
 			
 		// receive data until fin packet sent by sender
 		for (int expecNum = 0;;)
@@ -102,39 +151,39 @@ public class Receiver
 			DatagramPacket packet = new DatagramPacket(new byte[winSizeBytes], winSizeBytes);
 			socket.receive(packet);
 			byte[] data = packet.getData();
-			
-			//System.out.println("hi there");
-			if (finCheck(data))
+						
+			if (finCheck(data)) {
+				//System.out.println(Arrays.toString(data));
 				break;
+			}
 			
 			// send ack for next sequence number expected if packet in order
 			// else send ack for last received packet sequence number
 			if (expecNum == getSeqNum(data))
 			{
 				out.print(++expecNum + "|");
-				// System.out.println(expecNum + "|");
 				out.flush();
+				System.out.println(hash(data) + " " + checkPacketSum(data));
 				write2Log(writerLog, Arrays.copyOfRange(data, 0, 20), expecNum);
 			} else 
 			{
-				//out.print((char) expecNum);
 				out.print(expecNum + "|");
-				// System.out.println(expecNum + "|");
 				out.flush();
 				write2Log(writerLog, Arrays.copyOfRange(data, 0, 20), expecNum);
 				continue;
 			}
 			
-			String string = new String(Arrays.copyOfRange(data, 20, data.length-20), 0);
-			
+			//String string = new String(Arrays.copyOfRange(data, 20, truLen(data)), 0);
+			String string = new String(Arrays.copyOfRange(data, 20, 556), 0);
+
 			writer.write(string);	
-			System.out.print(string);
+			writerFile1.write(string);
+			writerFile1.flush();
 			writer.flush();
 		}
 		
-		//socket.close();
-		//ackSocket.close();
-		//out.close();
-		//writer.close();
+		socket.close();
+		out.close();
+		writer.close();
 	}
 }

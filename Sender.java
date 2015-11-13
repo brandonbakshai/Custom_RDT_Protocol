@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.DatagramPacket;
@@ -58,6 +59,7 @@ public class Sender {
 			data.setSeqNum(i);
 			data.setDstPort((char) Integer.parseInt(args[2]));
 			data.setSrcPort((char) Integer.parseInt(args[3]));
+			data.setInetSum(data.checkSum());
 			//System.out.println(data.getSeqNum());
 			DatagramPacket pack = new DatagramPacket(data.toByteArray(), data.toByteArray().length, 
 					InetAddress.getByName(args[1]), Integer.parseInt(args[2]));
@@ -82,6 +84,9 @@ public class Sender {
 			return ;
 		}
 		
+		FileWriter writerFile2 = new FileWriter(
+				new File("/Users/brandonbakhshai/Desktop/file2.txt"));
+		
 		// set up the data udp socket and the tpc ack socket
 		DatagramSocket dataSocket = new DatagramSocket();
         ServerSocket ackServer = new ServerSocket(
@@ -96,7 +101,7 @@ public class Sender {
 		
 		// calculate number of segments needed to package data from file
 		int len = (int) new File(args[0]).length();
-		int numSegment = (int) Math.floorDiv(len, 536) + 1;	
+		int numSegment = len / 536 + ((len % 536 == 0) ? 0 : 1); 
 		
 		// make the datagram packets
 		DatagramPacket[] packets = makePackets(numSegment, args);
@@ -105,7 +110,9 @@ public class Sender {
 		// stop when the window start is not less than the number of packets to be sent
 		while (winStart < packets.length)
 		{
-			//dataSocket.setSoTimeout(RTT);
+			// set the timeout for the socket
+			// initial value is static int RTT
+			dataSocket.setSoTimeout(RTT);
 			
 			// test condition
 			// delete after testing
@@ -116,6 +123,9 @@ public class Sender {
 			for (i = winStart; i < Math.min(packets.length, winStart+Integer.parseInt(args[5])); i++) 
 			{
 				dataSocket.send(packets[i]);
+				//System.out.println(Arrays.toString(packets[i].getData()));
+				writerFile2.write(new String(Arrays.copyOfRange(packets[i].getData(), 20, packets[i].getData().length), 0));
+				writerFile2.flush();
             }
 			
 			// read acks and increment winStart accordingly
@@ -144,5 +154,6 @@ public class Sender {
 		ackSocket.close();
 		dataSocket.close();
 		in.close();
+		writerFile2.close();
 	}
 }
